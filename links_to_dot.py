@@ -1,6 +1,9 @@
 import json
+from pathlib import Path
 
 from graphviz import Digraph
+
+BUILD_DIR = Path("build")
 
 PALETTE: dict[str, str] = {
     "/tutorial/": "#dd1fcd",
@@ -58,7 +61,7 @@ def should_ignore(route: str) -> bool:
     ) or "/changelog/" in route
 
 
-with open("links.json", encoding="utf-8") as f:
+with (BUILD_DIR / "links.json").open(encoding="utf-8") as f:
     links = json.load(f)
 
 dot = Digraph(

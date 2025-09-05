@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+BUILD_DIR = Path("build")
+
 
 @dataclass
 class Node:
@@ -52,8 +54,7 @@ def parse_content(content: str | dict) -> Generator[str]:
 
 
 def main() -> None:
-    # Read docs.json
-    docs_path = Path("docs.json")
+    docs_path = BUILD_DIR / "docs.json"
     with docs_path.open("r", encoding="utf-8") as f:
         docs = json.load(f)
 
@@ -83,7 +84,7 @@ def main() -> None:
                 title=title, kind=kind, out_links=list(sorted(out_links))
             )
 
-    links_path = Path("links.json")
+    links_path = BUILD_DIR / "links.json"
     with links_path.open("w", encoding="utf-8") as f:
         json.dump(
             {k: v.to_dict() for k, v in catalog.items()},

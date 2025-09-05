@@ -1,7 +1,4 @@
-/docs.json
-/links.json
-/links.dot
-/links.svg
+/build/
 
 # Python-generated files
 __pycache__/
