@@ -1,13 +1,36 @@
 import json
+from collections import deque
 from pathlib import Path
 from sys import argv
+from typing import Literal
 
 from graphviz import Digraph
 
 BUILD_DIR = Path("build")
 
-FOCUS_PREFIXES: list[str] = argv[1:]
-"""The focused route prefixes"""
+FOCUS_PREFIXES: list[str]
+"""The focused route prefixes
+
+Routes not starting with any focused prefixes will be contracted.
+"""
+FOCUS_MODE: Literal["focus", "all"]
+"""Focus mode
+
+- focus: Only draw edges whose both ends are focused.
+- all: Draw all edges.
+"""
+
+match argv[1:]:
+    case ["all"] | []:
+        FOCUS_PREFIXES = []
+        FOCUS_MODE = "all"
+    case ["overview"]:
+        FOCUS_PREFIXES = ["/tutorial/", "/guides/"]
+        FOCUS_MODE = "all"
+    case prefixes:
+        FOCUS_PREFIXES = prefixes
+        FOCUS_MODE = "focus"
+
 
 PALETTE: dict[str, str] = {
     "/tutorial/": "#dd1fcd",
@@ -65,14 +88,18 @@ def should_ignore(route: str) -> bool:
     ) or "/changelog/" in route
 
 
-def focus(route: str) -> str:
-    """Contract the route unless it's focused"""
-    if not FOCUS_PREFIXES:
-        return route
-
+def is_focused(route: str) -> bool:
     for prefix in FOCUS_PREFIXES:
         if route.startswith(prefix):
-            return route
+            return True
+
+    return False
+
+
+def contract(route: str) -> str:
+    """Contract the route unless it's focused"""
+    if not FOCUS_PREFIXES or is_focused(route):
+        return route
 
     for prefix in PALETTE.keys():
         if route.startswith(prefix):
@@ -89,7 +116,7 @@ dot = Digraph(
     graph_attr=[
         (
             "label",
-            f"Links under {', '.join(FOCUS_PREFIXES)}"
+            f"Links under {', '.join(links[r]['title'] for r in FOCUS_PREFIXES)}"
             if FOCUS_PREFIXES is not None
             else "All links",
         ),
@@ -115,7 +142,7 @@ for route, info in links.items():
     if should_ignore(route):
         continue
 
-    if focus(route) != route:
+    if contract(route) != route:
         continue
 
     title: str = info["title"]
@@ -132,16 +159,28 @@ for route, info in links.items():
     )
 
 # Edges
+# There might be duplicate edges after contraction. Therefore, we keep track of drawn edges.
+drawn_edges: deque[tuple[str, str]] = deque()
 for src_long_route, src in links.items():
-    if src_long_route != (src_route := focus(src_long_route)):
-        continue
-
     for dst_long_route in src["out_links"]:
-        if dst_long_route != (dst_route := focus(dst_long_route)):
+        src_route = contract(src_long_route)
+        dst_route = contract(dst_long_route)
+
+        if (
+            should_ignore(src_route)
+            or should_ignore(dst_route)
+            or src_route == dst_route
+            or (
+                FOCUS_MODE == "focus"
+                and not is_focused(src_route)
+                and not is_focused(dst_route)
+            )
+        ):
             continue
 
-        if should_ignore(src_route) or should_ignore(dst_route):
+        if (src_route, dst_route) in drawn_edges:
             continue
+        drawn_edges.append((src_route, dst_route))
 
         dst = links[dst_route]
         src_color = decide_color(src_route)

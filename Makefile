@@ -5,7 +5,7 @@ all:
 	mkdir -p build
 	$(MAKE) \
 		build/links-overview.svg \
-		build/links-{foundations,model,layout,visualize,introspection}.svg \
+		build/links-{tutorial+guide,foundations,model,layout,visualize,introspection}.svg \
 		build/links.svg
 
 build/docs.json:
@@ -17,6 +17,8 @@ build/links.json: main.py build/docs.json
 build/links.dot: links_to_dot.py build/links.json
 	uv run $< > $@
 build/links-overview.dot: links_to_dot.py build/links.json
+	uv run $< overview > $@
+build/links-tutorial+guide.dot: links_to_dot.py build/links.json
 	uv run $< /tutorial/ /guides/ > $@
 build/links-%.dot: links_to_dot.py build/links.json
 	uv run $< $(patsubst build/links-%.dot,/reference/%/,$@) > $@
