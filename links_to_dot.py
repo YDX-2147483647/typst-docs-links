@@ -1,5 +1,7 @@
 import json
 
+from graphviz import Digraph
+
 PALETTE: dict[str, str] = {
     "/tutorial/": "#dd1fcd",
     "/guides/": "#F4442E",
@@ -28,14 +30,20 @@ PALETTE: dict[str, str] = {
 with open("links.json", encoding="utf-8") as f:
     links = json.load(f)
 
-print("digraph links {")
+dot = Digraph(
+    format="svg",
+    name="Links",
+    node_attr=[
+        ("style", "filled"),
+        ("fontcolor", "white"),
+        ("fillcolor", "black"),
+        ("color", "transparent"),
+    ],
+    edge_attr=[("color", "gray")],
+    # For quick debugging:
+    # body='layout = "sfdp"\n',
+)
 
-# Set default attributes
-print("node [style=filled, fontcolor=white, fillcolor=black, color=transparent]")
-print("edge [color=gray]")
-
-# For quick debugging:
-# print('layout = "sfdp"')
 
 # Nodes
 for route, info in links.items():
@@ -59,14 +67,17 @@ for route, info in links.items():
             break
     match color:
         case None:
-            color_attr = ""
+            color_attr = {}
         case c:
-            color_attr = f'fillcolor="{c}",'
+            color_attr = {"fillcolor": c}
 
     title: str = info["title"]
 
-    print(
-        f'"{route}" [label="{title}", href="https://typst.app/docs{route}", {color_attr}];'
+    dot.node(
+        name=route,
+        label=title,
+        href=f"https://typst.app/docs{route}",
+        **color_attr,
     )
 
 # Edges
@@ -76,6 +87,9 @@ for src_route, info in links.items():
         if "/changelog/" in src_route:
             continue
 
-        print(f'"{src_route}" -> "{dst_route}";')
+        dot.edge(
+            tail_name=src_route,
+            head_name=dst_route,
+        )
 
-print("}")
+print(dot.source)
