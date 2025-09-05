@@ -6,8 +6,8 @@ from graphviz import Digraph
 
 BUILD_DIR = Path("build")
 
-FOCUS_PREFIX: str | None = argv[1] if len(argv) > 1 else None
-"""The focused route prefix"""
+FOCUS_PREFIXES: list[str] = argv[1:]
+"""The focused route prefixes"""
 
 PALETTE: dict[str, str] = {
     "/tutorial/": "#dd1fcd",
@@ -67,16 +67,18 @@ def should_ignore(route: str) -> bool:
 
 def focus(route: str) -> str:
     """Contract the route unless it's focused"""
-    if FOCUS_PREFIX is None:
+    if not FOCUS_PREFIXES:
         return route
 
-    if route.startswith(FOCUS_PREFIX):
-        return route
-    else:
-        for prefix in PALETTE.keys():
-            if route.startswith(prefix):
-                return prefix
-        raise ValueError(f"Failed to contract the route: {route}")
+    for prefix in FOCUS_PREFIXES:
+        if route.startswith(prefix):
+            return route
+
+    for prefix in PALETTE.keys():
+        if route.startswith(prefix):
+            return prefix
+
+    raise ValueError(f"Failed to contract the route: {route}")
 
 
 with (BUILD_DIR / "links.json").open(encoding="utf-8") as f:
@@ -87,7 +89,9 @@ dot = Digraph(
     graph_attr=[
         (
             "label",
-            f"Links under {FOCUS_PREFIX}" if FOCUS_PREFIX is not None else "All links",
+            f"Links under {', '.join(FOCUS_PREFIXES)}"
+            if FOCUS_PREFIXES is not None
+            else "All links",
         ),
         ("labelloc", "t"),
     ],
