@@ -42,11 +42,12 @@ def parse_content(content: str | dict) -> Generator[str]:
     if isinstance(content, str):
         yield content
     else:
-        yield content.get("details", "")
+        yield content["details"]
         yield content.get("description", "")
 
-        for param in content.get("params", []):
-            yield param.get("details", "")
+        for nesting in ["params", "scope", "functions"]:
+            for child in content.get(nesting, []):
+                yield from parse_content(child)
 
 
 def main() -> None:
