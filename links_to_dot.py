@@ -52,8 +52,7 @@ def should_ignore(route: str) -> bool:
     # Ignore HTML tags and changelogs
     return (
         "/html/" in route
-        and not route.endswith("/html/")
-        and not route.endswith("/html/html/")
+        and (not route.endswith("/html/") or route.endswith("/html/html/"))
         and "/html/elem/" not in route
         and "/html/frame/" not in route
     ) or "/changelog/" in route
