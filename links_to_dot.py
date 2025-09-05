@@ -1,9 +1,13 @@
 import json
 from pathlib import Path
+from sys import argv
 
 from graphviz import Digraph
 
 BUILD_DIR = Path("build")
+
+FOCUS_PREFIX: str | None = argv[1] if len(argv) > 1 else None
+"""The focused route prefix"""
 
 PALETTE: dict[str, str] = {
     "/tutorial/": "#dd1fcd",
@@ -31,7 +35,7 @@ PALETTE: dict[str, str] = {
     # Other
     "/": "#ADADAD",
 }
-"""Route to color"""
+"""Route prefix to color"""
 
 SHAPE: dict[str, str] = {
     "html": "box",
@@ -61,12 +65,32 @@ def should_ignore(route: str) -> bool:
     ) or "/changelog/" in route
 
 
+def focus(route: str) -> str:
+    """Contract the route unless it's focused"""
+    if FOCUS_PREFIX is None:
+        return route
+
+    if route.startswith(FOCUS_PREFIX):
+        return route
+    else:
+        for prefix in PALETTE.keys():
+            if route.startswith(prefix):
+                return prefix
+        raise ValueError(f"Failed to contract the route: {route}")
+
+
 with (BUILD_DIR / "links.json").open(encoding="utf-8") as f:
     links = json.load(f)
 
 dot = Digraph(
     format="svg",
-    name="Links",
+    graph_attr=[
+        (
+            "label",
+            f"Links under {FOCUS_PREFIX}" if FOCUS_PREFIX is not None else "All links",
+        ),
+        ("labelloc", "t"),
+    ],
     node_attr=[
         ("style", "filled"),
         ("fontcolor", "white"),
@@ -87,6 +111,9 @@ for route, info in links.items():
     if should_ignore(route):
         continue
 
+    if focus(route) != route:
+        continue
+
     title: str = info["title"]
     kind: str = info["kind"]
     color = decide_color(route)
@@ -101,8 +128,14 @@ for route, info in links.items():
     )
 
 # Edges
-for src_route, src in links.items():
-    for dst_route in src["out_links"]:
+for src_long_route, src in links.items():
+    if src_long_route != (src_route := focus(src_long_route)):
+        continue
+
+    for dst_long_route in src["out_links"]:
+        if dst_long_route != (dst_route := focus(dst_long_route)):
+            continue
+
         if should_ignore(src_route) or should_ignore(dst_route):
             continue
 
