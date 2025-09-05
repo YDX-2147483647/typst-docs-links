@@ -10,10 +10,11 @@ from typing import Any
 @dataclass
 class Node:
     title: str
+    kind: str
     out_links: list[str]
 
     def to_dict(self) -> dict:
-        return {"title": self.title, "out_links": self.out_links}
+        return {"title": self.title, "kind": self.kind, "out_links": self.out_links}
 
 
 def extract_links_from_html(html: str) -> list[str]:
@@ -62,11 +63,13 @@ def main() -> None:
         for p in collect_routes(page):
             route: str = p["route"]
             title: str = p["title"]
+
             body = p["body"]
+            kind = body["kind"]
             content = body["content"]
 
             links: deque[str] = deque()
-            if body["kind"] == "category":
+            if kind == "category":
                 links += {item["route"] for item in content["items"]}
             for part in parse_content(content):
                 links += extract_links_from_html(part)
@@ -76,7 +79,9 @@ def main() -> None:
             if route in out_links:
                 out_links.remove(route)
 
-            catalog[route] = Node(title=title, out_links=list(sorted(out_links)))
+            catalog[route] = Node(
+                title=title, kind=kind, out_links=list(sorted(out_links))
+            )
 
     links_path = Path("links.json")
     with links_path.open("w", encoding="utf-8") as f:

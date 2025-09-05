@@ -28,6 +28,17 @@ PALETTE: dict[str, str] = {
     # Other
     "/": "#ADADAD",
 }
+"""Route to color"""
+
+SHAPE: dict[str, str] = {
+    "html": "box",
+    "func": "ellipse",
+    "type": "hexagon",
+    "group": "house",
+    "category": "trapezium",
+    "symbols": "octagon",
+}
+"""Kind to shape"""
 
 
 def decide_color(route: str) -> str | None:
@@ -75,13 +86,16 @@ for route, info in links.items():
         continue
 
     title: str = info["title"]
+    kind: str = info["kind"]
     color = decide_color(route)
 
     dot.node(
         name=route,
         label=title,
+        tooltip=f"{title} ({kind})",
         href=f"https://typst.app/docs{route}",
         fillcolor=color,
+        shape=SHAPE[kind],
     )
 
 # Edges
