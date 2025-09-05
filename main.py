@@ -28,7 +28,7 @@ def collect_routes(page: dict[str, Any]) -> deque[dict[str, Any]]:
     while stack:
         p = stack.pop()
         routes.append(p)
-        for child in p.get("children", []):
+        for child in p["children"]:
             stack.append(child)
     return routes
 
@@ -61,9 +61,12 @@ def main() -> None:
         for p in collect_routes(page):
             route: str = p["route"]
             title: str = p["title"]
-            content = p.get("body", {}).get("content", "")
+            body = p["body"]
+            content = body["content"]
 
             links: deque[str] = deque()
+            if body["kind"] == "category":
+                links += {item["route"] for item in content["items"]}
             for part in parse_content(content):
                 links += extract_links_from_html(part)
 

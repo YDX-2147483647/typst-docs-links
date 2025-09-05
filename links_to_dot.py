@@ -37,6 +37,17 @@ def decide_color(route: str) -> str | None:
     raise ValueError(f"Failed to decide color for route: {route}")
 
 
+def should_ignore(route: str) -> bool:
+    # Ignore HTML tags and changelogs
+    return (
+        "/html/" in route
+        and not route.endswith("/html/")
+        and not route.endswith("/html/html/")
+        and "/html/elem/" not in route
+        and "/html/frame/" not in route
+    ) or "/changelog/" in route
+
+
 with open("links.json", encoding="utf-8") as f:
     links = json.load(f)
 
@@ -60,14 +71,7 @@ dot = Digraph(
 for route, info in links.items():
     route: str
 
-    # Ignore HTML tags and changelogs
-    if (
-        "/html/" in route
-        and not route.endswith("/html/")
-        and not route.endswith("/html/html/")
-        and "/html/elem/" not in route
-        and "/html/frame/" not in route
-    ) or "/changelog/" in route:
+    if should_ignore(route):
         continue
 
     title: str = info["title"]
@@ -83,8 +87,7 @@ for route, info in links.items():
 # Edges
 for src_route, src in links.items():
     for dst_route in src["out_links"]:
-        # Ignore changelogs (but keep referenced HTML tags)
-        if "/changelog/" in src_route:
+        if should_ignore(src_route) or should_ignore(dst_route):
             continue
 
         dst = links[dst_route]
