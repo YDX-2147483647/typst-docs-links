@@ -25,7 +25,17 @@ PALETTE: dict[str, str] = {
     "/reference/visualize/": "#1691EF",
     "/reference/introspection/": "#5E55FF",
     "/reference/data-loading/": "#AD30EC",
+    # Other
+    "/": "#ADADAD",
 }
+
+
+def decide_color(route: str) -> str | None:
+    for prefix, c in PALETTE.items():
+        if route.startswith(prefix):
+            return c
+    raise ValueError(f"Failed to decide color for route: {route}")
+
 
 with open("links.json", encoding="utf-8") as f:
     links = json.load(f)
@@ -36,10 +46,11 @@ dot = Digraph(
     node_attr=[
         ("style", "filled"),
         ("fontcolor", "white"),
-        ("fillcolor", "black"),
         ("color", "transparent"),
     ],
-    edge_attr=[("color", "gray")],
+    edge_attr=[
+        ("penwidth", "1.5"),
+    ],
     # For quick debugging:
     # body='layout = "sfdp"\n',
 )
@@ -59,37 +70,33 @@ for route, info in links.items():
     ) or "/changelog/" in route:
         continue
 
-    # Select color
-    color = None
-    for prefix, c in PALETTE.items():
-        if route.startswith(prefix):
-            color = c
-            break
-    match color:
-        case None:
-            color_attr = {}
-        case c:
-            color_attr = {"fillcolor": c}
-
     title: str = info["title"]
+    color = decide_color(route)
 
     dot.node(
         name=route,
         label=title,
         href=f"https://typst.app/docs{route}",
-        **color_attr,
+        fillcolor=color,
     )
 
 # Edges
-for src_route, info in links.items():
-    for dst_route in info["out_links"]:
+for src_route, src in links.items():
+    for dst_route in src["out_links"]:
         # Ignore changelogs (but keep referenced HTML tags)
         if "/changelog/" in src_route:
             continue
 
+        dst = links[dst_route]
+        src_color = decide_color(src_route)
+        dst_color = decide_color(dst_route)
+
         dot.edge(
             tail_name=src_route,
             head_name=dst_route,
+            tooltip=f"{src['title']} → {dst['title']}",
+            # Transparentize and concatenate colors
+            color=f"{dst_color}66;0.5:{src_color}66",
         )
 
 print(dot.source)
