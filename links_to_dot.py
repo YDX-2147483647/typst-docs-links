@@ -111,15 +111,17 @@ def contract(route: str) -> str:
 with (BUILD_DIR / "links.json").open(encoding="utf-8") as f:
     links = json.load(f)
 
+title = (
+    f"Links under {', '.join(links[r]['title'] for r in FOCUS_PREFIXES)}"
+    if FOCUS_PREFIXES is not None
+    else "All links"
+)
+
 dot = Digraph(
     format="svg",
+    name=title,
     graph_attr=[
-        (
-            "label",
-            f"Links under {', '.join(links[r]['title'] for r in FOCUS_PREFIXES)}"
-            if FOCUS_PREFIXES is not None
-            else "All links",
-        ),
+        ("label", title),
         ("labelloc", "t"),
     ],
     node_attr=[
