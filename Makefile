@@ -6,7 +6,7 @@ all:
 	mkdir -p build
 	$(MAKE) \
 		build/links-overview.svg \
-		build/links-{tutorial+guide,foundations,model,layout,visualize,introspection}.svg \
+		build/links-{tutorial+guide,foundations,model,text,math,layout,visualize,introspection,math}.svg \
 		build/links.svg
 
 build/docs.json:
