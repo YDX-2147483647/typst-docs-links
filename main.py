@@ -45,7 +45,13 @@ def parse_content(content: str | dict) -> Generator[str]:
     if isinstance(content, str):
         yield content
     else:
-        yield content["details"]
+        if isinstance(content["details"], str):
+            yield content["details"]
+        else:
+            for block in content["details"]:
+                if block["kind"] == "html":
+                    yield block["content"]
+
         yield content.get("description", "")
 
         for nesting in ["params", "scope", "functions"]:
